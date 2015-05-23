@@ -14,7 +14,7 @@ OBJ = $(SRC:.c=.o)
 
 all: CFLAGS += -Os
 all: LDFLAGS += -s
-all: xtitle
+all: xdesktop
 
 include Sourcedeps
 
@@ -23,17 +23,17 @@ $(OBJ): Makefile
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-xtitle: $(OBJ)
+xdesktop: $(OBJ)
 	$(CC) -o $@ $(OBJ) $(LDFLAGS) $(LIBS)
 
 install:
 	mkdir -p "$(DESTDIR)$(BINPREFIX)"
-	cp -p xtitle "$(DESTDIR)$(BINPREFIX)"
+	cp -p xdesktop "$(DESTDIR)$(BINPREFIX)"
 
 uninstall:
-	rm -f $(DESTDIR)$(BINPREFIX)/xtitle
+	rm -f $(DESTDIR)$(BINPREFIX)/xdesktop
 
 clean:
-	rm -f $(OBJ) xtitle
+	rm -f $(OBJ) xdesktop
 
 .PHONY: all clean install uninstall
