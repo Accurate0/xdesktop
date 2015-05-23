@@ -43,8 +43,8 @@ int main(int argc, char *argv[])
 
 	if (snoop) {
 
-       	const uint32_t values[] = { XCB_EVENT_MASK_PROPERTY_CHANGE};
-       	xcb_change_window_attributes (dpy, screen->root, XCB_CW_EVENT_MASK, values);
+		const uint32_t values[] = { XCB_EVENT_MASK_PROPERTY_CHANGE};
+		xcb_change_window_attributes (dpy, screen->root, XCB_CW_EVENT_MASK, values);
 
 		xcb_intern_atom_cookie_t ac = xcb_intern_atom(dpy, 0, strlen("_NET_CURRENT_DESKTOP"), "_NET_CURRENT_DESKTOP");
 		cur_desktop_atom = xcb_intern_atom_reply(dpy, ac, NULL)->atom;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 			if (select(fd + 1, &descriptors, NULL, NULL, NULL) > 0) {
 				xcb_generic_event_t *evt;
 				while ((evt = xcb_poll_for_event(dpy)) != NULL) {
-					if (desktop_changed(evt)) // kyubiko
+					if (desktop_changed(evt))
 						output_desktop();
 					free(evt);
 				}
@@ -101,14 +101,14 @@ void output_desktop(void)
 	fflush(stdout);
 }
 
-int desktop_changed(xcb_generic_event_t *evt)
+bool desktop_changed(xcb_generic_event_t *evt)
 {
 	if ((evt->response_type & ~0x80) == XCB_PROPERTY_NOTIFY){
 		xcb_property_notify_event_t *pne = (xcb_property_notify_event_t*) evt;
 		if(pne->atom == cur_desktop_atom)
-			return 1;
+			return true;
 	}
-	return 0;
+	return false;
 }
 
 void hold(int sig)
