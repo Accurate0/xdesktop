@@ -13,10 +13,11 @@
 #include "helpers.h"
 #include "xdesktop.h"
 
-unsigned int cur_desktop, num_desktops;
+unsigned int cur_desktop;
 
 int main(int argc, char *argv[])
 {
+	bool snoop = false;
 	char opt;
 
 	while ((opt = getopt(argc, argv, "hvsef:t:")) != -1) {
@@ -29,15 +30,41 @@ int main(int argc, char *argv[])
 				printf("%s\n", VERSION);
 				return EXIT_SUCCESS;
 				break;
-//			case 's':
-//				snoop = true;
-//				break;
+			case 's':
+				snoop = true;
+				break;
 		}
 	}
 
 	setup();
 
 	output_desktop();
+
+	if (snoop) {
+		signal(SIGINT, hold);
+		signal(SIGHUP, hold);
+		signal(SIGTERM, hold);
+		fd_set descriptors;
+		int fd = xcb_get_file_descriptor(dpy);
+		running = true;
+		xcb_flush(dpy);
+		while (running) {
+			FD_ZERO(&descriptors);
+			FD_SET(fd, &descriptors);
+			if (select(fd + 1, &descriptors, NULL, NULL, NULL) > 0) {
+				xcb_generic_event_t *evt;
+				while ((evt = xcb_poll_for_event(dpy)) != NULL) {
+//					if (desktop_changed(evt, &desktop, &last_desktop)) // kyubiko
+						output_desktop();
+					free(evt);
+				}
+			}
+			if (xcb_connection_has_error(dpy)) {
+				warn("The server closed the connection.\n");
+				running = false;
+			}
+		}
+	}
 
 	xcb_ewmh_connection_wipe(ewmh);
 	free(ewmh);
@@ -64,6 +91,11 @@ void output_desktop(void)
 
 	printf("%i\n", cur_desktop);
 	fflush(stdout);
+}
+
+void desktop_changed(xcb_generic_event_t *evt)
+{
+	// Kyubiko
 }
 
 void hold(int sig)
