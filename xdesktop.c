@@ -14,6 +14,7 @@
 #include "xdesktop.h"
 
 unsigned int cur_desktop;
+xcb_atom_t cur_desktop_atom;
 
 int main(int argc, char *argv[])
 {
@@ -41,6 +42,13 @@ int main(int argc, char *argv[])
 	output_desktop();
 
 	if (snoop) {
+
+       	const uint32_t values[] = { XCB_EVENT_MASK_PROPERTY_CHANGE};
+       	xcb_change_window_attributes (dpy, screen->root, XCB_CW_EVENT_MASK, values);
+
+		xcb_intern_atom_cookie_t ac = xcb_intern_atom(dpy, 0, strlen("_NET_CURRENT_DESKTOP"), "_NET_CURRENT_DESKTOP");
+		cur_desktop_atom = xcb_intern_atom_reply(dpy, ac, NULL)->atom;
+
 		signal(SIGINT, hold);
 		signal(SIGHUP, hold);
 		signal(SIGTERM, hold);
@@ -54,7 +62,7 @@ int main(int argc, char *argv[])
 			if (select(fd + 1, &descriptors, NULL, NULL, NULL) > 0) {
 				xcb_generic_event_t *evt;
 				while ((evt = xcb_poll_for_event(dpy)) != NULL) {
-//					if (desktop_changed(evt, &desktop, &last_desktop)) // kyubiko
+					if (desktop_changed(evt)) // kyubiko
 						output_desktop();
 					free(evt);
 				}
@@ -77,7 +85,7 @@ void setup(void)
 	dpy = xcb_connect(NULL, &default_screen);
 	if (xcb_connection_has_error(dpy))
 		err("Can't open display.\n");
-	xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(dpy)).data;
+	screen = xcb_setup_roots_iterator(xcb_get_setup(dpy)).data;
 	if (screen == NULL)
 		err("Can't acquire screen.\n");
 	ewmh = malloc(sizeof(xcb_ewmh_connection_t));
@@ -93,9 +101,14 @@ void output_desktop(void)
 	fflush(stdout);
 }
 
-void desktop_changed(xcb_generic_event_t *evt)
+int desktop_changed(xcb_generic_event_t *evt)
 {
-	// Kyubiko
+	if ((evt->response_type & ~0x80) == XCB_PROPERTY_NOTIFY){
+		xcb_property_notify_event_t *pne = (xcb_property_notify_event_t*) evt;
+		if(pne->atom == cur_desktop_atom)
+			return 1;
+	}
+	return 0;
 }
 
 void hold(int sig)
