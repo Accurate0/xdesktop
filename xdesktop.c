@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	while ((opt = getopt(argc, argv, "hvsef:t:")) != -1) {
 		switch (opt) {
 			case 'h':
-				printf("xdesktop [-h|-v|-s\n");
+				printf("xdesktop [-h|-v|-s]\n");
 				return EXIT_SUCCESS;
 				break;
 			case 'v':
