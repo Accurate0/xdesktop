@@ -81,7 +81,11 @@ int main(int argc, char *argv[])
 	}
 	else {
 		uint32_t i = 1;
+		// None of these work
 		xcb_ewmh_request_change_current_desktop(ewmh, default_screen, i, timestamp);
+		xcb_ewmh_request_change_showing_desktop(ewmh, default_screen, i);
+		xcb_ewmh_set_current_desktop(ewmh, default_screen, i);
+		xcb_ewmh_set_wm_desktop(ewmh, default_screen, i);
 	}
 
 	xcb_ewmh_connection_wipe(ewmh);
