@@ -15,6 +15,7 @@
 
 unsigned int cur_desktop;
 xcb_atom_t cur_desktop_atom;
+xcb_timestamp_t timestamp;
 
 int main(int argc, char *argv[])
 {
@@ -79,7 +80,8 @@ int main(int argc, char *argv[])
 		}
 	}
 	else {
-		set_desktop(atoi(optarg));
+		uint32_t i = 1;
+		xcb_ewmh_request_change_current_desktop(ewmh, default_screen, i, timestamp);
 	}
 
 	xcb_ewmh_connection_wipe(ewmh);
@@ -117,11 +119,6 @@ bool desktop_changed(xcb_generic_event_t *evt)
 			return true;
 	}
 	return false;
-}
-
-void set_desktop(uint32_t i)
-{
-	xcb_ewmh_set_current_desktop(ewmh, default_screen, i);
 }
 
 void hold(int sig)
