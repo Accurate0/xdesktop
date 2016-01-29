@@ -15,11 +15,13 @@
 
 unsigned int cur_desktop;
 xcb_atom_t cur_desktop_atom;
+xcb_timestamp_t timestamp;
 
 int main(int argc, char *argv[])
 {
-	bool get = true;
 	bool snoop = false;
+	bool get = true;
+	int desktop = 0;
 	char opt;
 
 	while ((opt = getopt(argc, argv, "hvsfc:")) != -1) {
@@ -36,6 +38,7 @@ int main(int argc, char *argv[])
 				snoop = true;
 				break;
 			case 'c':
+				desktop = atoi(optarg);
 				get = false;
 				break;
 		}
@@ -79,20 +82,9 @@ int main(int argc, char *argv[])
 		}
 	}
 	else {
-		xcb_intern_atom_cookie_t ac = xcb_intern_atom(dpy, 0, strlen("_NET_CURRENT_DESKTOP"), "_NET_CURRENT_DESKTOP");
-		cur_desktop_atom = xcb_intern_atom_reply(dpy, ac, NULL)->atom;
+  		xcb_ewmh_request_change_current_desktop(ewmh, default_screen, desktop, timestamp);
 
-		xcb_client_message_event_t ev;
-
-		ev.response_type = XCB_CLIENT_MESSAGE;
-		ev.sequence = 0;
-		ev.format = 32;
-		ev.window = screen->root;
-		ev.type = cur_desktop_atom;
-		ev.data.data32[0] = 1;
-		ev.data.data32[1] = XCB_CURRENT_TIME;
-
-		xcb_send_event(dpy, 0, screen->root, XCB_EVENT_MASK_NO_EVENT, (char *)&ev); 
+		xcb_flush(dpy);
 	}
 
 	xcb_ewmh_connection_wipe(ewmh);
