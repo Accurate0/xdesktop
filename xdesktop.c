@@ -18,13 +18,14 @@ xcb_atom_t cur_desktop_atom;
 
 int main(int argc, char *argv[])
 {
+	bool get = true;
 	bool snoop = false;
 	char opt;
 
-	while ((opt = getopt(argc, argv, "hvsef:t:")) != -1) {
+	while ((opt = getopt(argc, argv, "hvsfc:")) != -1) {
 		switch (opt) {
 			case 'h':
-				printf("xdesktop [-h|-v|-s]\n");
+				printf("xdesktop [-h|-v|-s|-c DESKTOP]\n");
 				return EXIT_SUCCESS;
 				break;
 			case 'v':
@@ -34,44 +35,51 @@ int main(int argc, char *argv[])
 			case 's':
 				snoop = true;
 				break;
+			case 'c':
+				get = false;
+				break;
 		}
 	}
 
 	setup();
 
-	output_desktop();
+	if (get) {
+		output_desktop();
 
-	if (snoop) {
+		if (snoop) {
+			const uint32_t values[] = { XCB_EVENT_MASK_PROPERTY_CHANGE};
+			xcb_change_window_attributes (dpy, screen->root, XCB_CW_EVENT_MASK, values);
 
-		const uint32_t values[] = { XCB_EVENT_MASK_PROPERTY_CHANGE};
-		xcb_change_window_attributes (dpy, screen->root, XCB_CW_EVENT_MASK, values);
+			xcb_intern_atom_cookie_t ac = xcb_intern_atom(dpy, 0, strlen("_NET_CURRENT_DESKTOP"), "_NET_CURRENT_DESKTOP");
+			cur_desktop_atom = xcb_intern_atom_reply(dpy, ac, NULL)->atom;
 
-		xcb_intern_atom_cookie_t ac = xcb_intern_atom(dpy, 0, strlen("_NET_CURRENT_DESKTOP"), "_NET_CURRENT_DESKTOP");
-		cur_desktop_atom = xcb_intern_atom_reply(dpy, ac, NULL)->atom;
-
-		signal(SIGINT, hold);
-		signal(SIGHUP, hold);
-		signal(SIGTERM, hold);
-		fd_set descriptors;
-		int fd = xcb_get_file_descriptor(dpy);
-		running = true;
-		xcb_flush(dpy);
-		while (running) {
-			FD_ZERO(&descriptors);
-			FD_SET(fd, &descriptors);
-			if (select(fd + 1, &descriptors, NULL, NULL, NULL) > 0) {
-				xcb_generic_event_t *evt;
-				while ((evt = xcb_poll_for_event(dpy)) != NULL) {
-					if (desktop_changed(evt))
-						output_desktop();
-					free(evt);
+			signal(SIGINT, hold);
+			signal(SIGHUP, hold);
+			signal(SIGTERM, hold);
+			fd_set descriptors;
+			int fd = xcb_get_file_descriptor(dpy);
+			running = true;
+			xcb_flush(dpy);
+			while (running) {
+				FD_ZERO(&descriptors);
+				FD_SET(fd, &descriptors);
+				if (select(fd + 1, &descriptors, NULL, NULL, NULL) > 0) {
+					xcb_generic_event_t *evt;
+					while ((evt = xcb_poll_for_event(dpy)) != NULL) {
+						if (desktop_changed(evt))
+							output_desktop();
+						free(evt);
+					}
+				}
+				if (xcb_connection_has_error(dpy)) {
+					warn("The server closed the connection.\n");
+					running = false;
 				}
 			}
-			if (xcb_connection_has_error(dpy)) {
-				warn("The server closed the connection.\n");
-				running = false;
-			}
 		}
+	}
+	else {
+		set_desktop(atoi(optarg));
 	}
 
 	xcb_ewmh_connection_wipe(ewmh);
@@ -109,6 +117,11 @@ bool desktop_changed(xcb_generic_event_t *evt)
 			return true;
 	}
 	return false;
+}
+
+void set_desktop(uint32_t i)
+{
+	xcb_ewmh_set_current_desktop(ewmh, default_screen, i);
 }
 
 void hold(int sig)

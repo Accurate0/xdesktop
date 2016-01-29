@@ -11,5 +11,6 @@ void hold(int);
 void setup(void);
 void output_desktop();
 bool desktop_changed(xcb_generic_event_t *);
+void set_desktop(uint32_t i);
 
 #endif
