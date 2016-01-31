@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 	while ((opt = getopt(argc, argv, "hvstg:pn")) != -1) {
 		switch (opt) {
 			case 'h':
-				printf("xdesktop [-h|-v|-s|-t|-g DESKTOP|-|+]\n");
+				printf("xdesktop [-h|-v|-s|-t|-p|-n|-g DESKTOP]\n");
 				return EXIT_SUCCESS;
 				break;
 			case 'v':
@@ -44,15 +44,15 @@ int main(int argc, char *argv[])
 			case 't':
 				total = true;
 				break;
-			case 'g':
-				get = false;
-				query = atoi(optarg);
-				break;
 			case 'p':
 			case 'n':
 				get = false;
 				nextprev = true;
 				direction = opt;
+				break;
+			case 'g':
+				get = false;
+				query = atoi(optarg);
 				break;
 		}
 	}
