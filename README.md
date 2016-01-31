@@ -8,7 +8,7 @@ Outputs the number of the active desktop and continue to output it as it changes
 - `-h` — Print the synopsis to standard output and exit.
 - `-v` — Print the version to standard output and exit.
 - `-s` — Activate the *snoop* mode.
-- `-t` — Print total desktops to standard output and exist.
+- `-t` — Print total desktops to standard output and exit.
 - `-p` — Go to previous desktop.
 - `-n` — Go to next desktop.
 - `-g DESKTOP` — Go to desktop NUMBER.
