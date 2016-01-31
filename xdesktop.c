@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
 	bool total = false;
 	bool get = true;
 	bool nextprev = false;
+	char direction;
 	unsigned int query = 0;
 	char opt;
 
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
 			case 'n':
 				get = false;
 				nextprev = true;
+				direction = opt;
 				break;
 		}
 	}
@@ -98,41 +100,27 @@ int main(int argc, char *argv[])
 	} else {
 		if (nextprev) {
 			xcb_ewmh_get_current_desktop_reply(ewmh, xcb_ewmh_get_current_desktop(ewmh, default_screen), &cur_desktop, NULL);
+			xcb_ewmh_get_number_of_desktops_reply(ewmh, xcb_ewmh_get_number_of_desktops(ewmh, default_screen), &tot_desktops, NULL);
 
-			switch (opt) {
+			switch (direction) {
 				case 'p':
-					switch (cur_desktop) {
-						case '0':
-							query = '2';
-							break;
-						case '1':
-							query = '0';
-							break;
-						case '2':
-							query = '1';
-							break;
+					if (cur_desktop == 0) {
+						query = tot_desktops;
+					} else {
+						query = cur_desktop - 1;
 					}
 					break;
 				case 'n':
-					switch (cur_desktop) {
-						case '0':
-							query = '1';
-							break;
-						case '1':
-							query = '2';
-							break;
-						case '2':
-							query = '0';
-							break;
+					if (cur_desktop == tot_desktops) {
+						query = 0;
+					} else {
+						query = cur_desktop + 1;
 					}
 					break;
 			}
 		} else {
-			xcb_ewmh_get_number_of_desktops_reply(ewmh, xcb_ewmh_get_number_of_desktops(ewmh, default_screen), &tot_desktops, NULL);
-
-			if (query > tot_desktops) {
+			if (query > tot_desktops)
 				err("You don't have a desktop %i.\n", query);
-			}
 		}
 
   		xcb_ewmh_request_change_current_desktop(ewmh, default_screen, query, timestamp);
