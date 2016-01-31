@@ -9,7 +9,8 @@ bool running;
 
 void hold(int);
 void setup(void);
-void output_desktop();
+void output_current_desktop();
+void output_total_desktops();
 bool desktop_changed(xcb_generic_event_t *);
 
 #endif
