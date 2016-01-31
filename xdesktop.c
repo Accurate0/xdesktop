@@ -23,13 +23,13 @@ int main(int argc, char *argv[])
 	bool snoop = false;
 	bool total = false;
 	bool get = true;
-	int desktop = 0;
+	int query = 0;
 	char opt;
 
 	while ((opt = getopt(argc, argv, "hvsftc:")) != -1) {
 		switch (opt) {
 			case 'h':
-				printf("xdesktop [-h|-v|-s|-t|-c DESKTOP]\n");
+				printf("xdesktop [-h|-v|-s|-t|-c DESKTOP|-|+]\n");
 				return EXIT_SUCCESS;
 				break;
 			case 'v':
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 				total = true;
 				break;
 			case 'c':
-				desktop = atoi(optarg);
+				query = atoi(optarg);
 				get = false;
 				break;
 		}
@@ -90,7 +90,15 @@ int main(int argc, char *argv[])
 			}
 		}
 	} else {
-  		xcb_ewmh_request_change_current_desktop(ewmh, default_screen, desktop, timestamp);
+		// kyubiko
+		// btw, I get the same value from the output_total_desktops() functions,
+		// is there any way I can use that value in the if statement or variable?
+		xcb_ewmh_get_number_of_desktops_reply(ewmh, xcb_ewmh_get_number_of_desktops(ewmh, default_screen), &tot_desktops, NULL);
+		if (query > tot_desktops) {
+			err("You don't have a desktop %i.\n", query);
+		}
+
+  		xcb_ewmh_request_change_current_desktop(ewmh, default_screen, query, timestamp);
 
 		xcb_flush(dpy);
 	}
