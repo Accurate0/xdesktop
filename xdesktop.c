@@ -98,9 +98,11 @@ int main(int argc, char *argv[])
 			}
 		}
 	} else {
+		xcb_ewmh_get_number_of_desktops_reply(ewmh, xcb_ewmh_get_number_of_desktops(ewmh, default_screen), &tot_desktops, NULL);
+		tot_desktops = tot_desktops - 1;
+
 		if (nextprev) {
 			xcb_ewmh_get_current_desktop_reply(ewmh, xcb_ewmh_get_current_desktop(ewmh, default_screen), &cur_desktop, NULL);
-			xcb_ewmh_get_number_of_desktops_reply(ewmh, xcb_ewmh_get_number_of_desktops(ewmh, default_screen), &tot_desktops, NULL);
 
 			switch (direction) {
 				case 'p':
