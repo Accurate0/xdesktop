@@ -23,13 +23,14 @@ int main(int argc, char *argv[])
 	bool snoop = false;
 	bool total = false;
 	bool get = true;
-	int query = 0;
+	bool nextprev = false;
+	unsigned int query = 0;
 	char opt;
 
-	while ((opt = getopt(argc, argv, "hvsftc:")) != -1) {
+	while ((opt = getopt(argc, argv, "hvstg:pn")) != -1) {
 		switch (opt) {
 			case 'h':
-				printf("xdesktop [-h|-v|-s|-t|-c DESKTOP|-|+]\n");
+				printf("xdesktop [-h|-v|-s|-t|-g DESKTOP|-|+]\n");
 				return EXIT_SUCCESS;
 				break;
 			case 'v':
@@ -42,9 +43,14 @@ int main(int argc, char *argv[])
 			case 't':
 				total = true;
 				break;
-			case 'c':
-				query = atoi(optarg);
+			case 'g':
 				get = false;
+				query = atoi(optarg);
+				break;
+			case 'p':
+			case 'n':
+				get = false;
+				nextprev = true;
 				break;
 		}
 	}
@@ -90,12 +96,43 @@ int main(int argc, char *argv[])
 			}
 		}
 	} else {
-		// kyubiko
-		// btw, I get the same value from the output_total_desktops() functions,
-		// is there any way I can use that value in the if statement or variable?
-		xcb_ewmh_get_number_of_desktops_reply(ewmh, xcb_ewmh_get_number_of_desktops(ewmh, default_screen), &tot_desktops, NULL);
-		if (query > tot_desktops) {
-			err("You don't have a desktop %i.\n", query);
+		if (nextprev) {
+			xcb_ewmh_get_current_desktop_reply(ewmh, xcb_ewmh_get_current_desktop(ewmh, default_screen), &cur_desktop, NULL);
+
+			switch (opt) {
+				case 'p':
+					switch (cur_desktop) {
+						case '0':
+							query = '2';
+							break;
+						case '1':
+							query = '0';
+							break;
+						case '2':
+							query = '1';
+							break;
+					}
+					break;
+				case 'n':
+					switch (cur_desktop) {
+						case '0':
+							query = '1';
+							break;
+						case '1':
+							query = '2';
+							break;
+						case '2':
+							query = '0';
+							break;
+					}
+					break;
+			}
+		} else {
+			xcb_ewmh_get_number_of_desktops_reply(ewmh, xcb_ewmh_get_number_of_desktops(ewmh, default_screen), &tot_desktops, NULL);
+
+			if (query > tot_desktops) {
+				err("You don't have a desktop %i.\n", query);
+			}
 		}
 
   		xcb_ewmh_request_change_current_desktop(ewmh, default_screen, query, timestamp);
