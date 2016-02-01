@@ -154,6 +154,7 @@ void setup(void)
 void output_current_desktop(void)
 {
 	xcb_ewmh_get_current_desktop_reply(ewmh, xcb_ewmh_get_current_desktop(ewmh, default_screen), &cur_desktop, NULL);
+	cur_desktop = cur_desktop + 1;
 
 	printf("%i\n", cur_desktop);
 	fflush(stdout);
