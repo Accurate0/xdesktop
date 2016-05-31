@@ -13,8 +13,8 @@
 #include "helpers.h"
 #include "xdesktop.h"
 
-unsigned int cur_desktop;
-unsigned int tot_desktops;
+uint32_t cur_desktop;
+uint32_t tot_desktops;
 xcb_atom_t cur_desktop_atom;
 xcb_timestamp_t timestamp;
 
