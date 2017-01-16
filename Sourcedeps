@@ -1,2 +1,1 @@
-helpers.o: helpers.c helpers.h
-xdesktop.o: xdesktop.c helpers.h xdesktop.h
+xdesktop.o: xdesktop.c xdesktop.h

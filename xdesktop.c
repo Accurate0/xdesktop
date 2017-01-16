@@ -10,7 +10,6 @@
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
-#include "helpers.h"
 #include "xdesktop.h"
 
 uint32_t cur_desktop;
@@ -19,23 +18,30 @@ xcb_atom_t cur_desktop_atom;
 
 int main(int argc, char *argv[])
 {
+	dpy = NULL;
+	ewmh = NULL;
 	bool snoop = false;
 	bool total = false;
 	bool get = true;
 	bool nextprev = false;
 	char direction;
 	unsigned int query = 0;
+	int ret = EXIT_SUCCESS;
 	char opt;
+
+	signal(SIGINT, hold);
+	signal(SIGHUP, hold);
+	signal(SIGTERM, hold);
 
 	while ((opt = getopt(argc, argv, "hvstg:pn")) != -1) {
 		switch (opt) {
 			case 'h':
 				printf("xdesktop [-h|-v|-s|-t|-p|-n|-g DESKTOP]\n");
-				return EXIT_SUCCESS;
+				goto end;
 				break;
 			case 'v':
 				printf("%s\n", VERSION);
-				return EXIT_SUCCESS;
+				goto end;
 				break;
 			case 's':
 				snoop = true;
@@ -56,7 +62,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	setup();
+	if (!setup()) {
+		ret = EXIT_FAILURE;
+		goto end;
+	}
 
 	if (get) {
 		if (total) {
@@ -66,14 +75,11 @@ int main(int argc, char *argv[])
 
 			if (snoop) {
 				const uint32_t values[] = {XCB_EVENT_MASK_PROPERTY_CHANGE};
-				xcb_change_window_attributes (dpy, screen->root, XCB_CW_EVENT_MASK, values);
+				xcb_change_window_attributes (dpy, root, XCB_CW_EVENT_MASK, values);
 
 				xcb_intern_atom_cookie_t ac = xcb_intern_atom(dpy, 0, strlen("_NET_CURRENT_DESKTOP"), "_NET_CURRENT_DESKTOP");
 				cur_desktop_atom = xcb_intern_atom_reply(dpy, ac, NULL)->atom;
 
-				signal(SIGINT, hold);
-				signal(SIGHUP, hold);
-				signal(SIGTERM, hold);
 				fd_set descriptors;
 				int fd = xcb_get_file_descriptor(dpy);
 				running = true;
@@ -90,7 +96,7 @@ int main(int argc, char *argv[])
 						}
 					}
 					if (xcb_connection_has_error(dpy)) {
-						warn("The server closed the connection.\n");
+						warnx("The server closed the connection.\n");
 						running = false;
 					}
 				}
@@ -127,27 +133,39 @@ int main(int argc, char *argv[])
 		}
 
 		xcb_ewmh_request_change_current_desktop(ewmh, default_screen, query, XCB_CURRENT_TIME);
-
 		xcb_flush(dpy);
 	}
 
-	xcb_ewmh_connection_wipe(ewmh);
+end:
+	if (ewmh != NULL) {
+		xcb_ewmh_connection_wipe(ewmh);
+	}
+	if (dpy != NULL) {
+		xcb_disconnect(dpy);
+	}
 	free(ewmh);
-	xcb_disconnect(dpy);
-	return EXIT_SUCCESS;
+	return ret;
 }
 
-void setup(void)
+bool setup(void)
 {
 	dpy = xcb_connect(NULL, &default_screen);
-	if (xcb_connection_has_error(dpy))
-		err("Can't open display.\n");
-	screen = xcb_setup_roots_iterator(xcb_get_setup(dpy)).data;
-	if (screen == NULL)
-		err("Can't acquire screen.\n");
+	if (xcb_connection_has_error(dpy)) {
+		warnx("can't open display.");
+		return false;
+	}
+	xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(dpy)).data;
+	if (screen == NULL) {
+		warnx("can't acquire screen.");
+		return false;
+	}
+	root = screen->root;
 	ewmh = malloc(sizeof(xcb_ewmh_connection_t));
-	if (xcb_ewmh_init_atoms_replies(ewmh, xcb_ewmh_init_atoms(dpy, ewmh), NULL) == 0)
-		err("Can't initialize EWMH atoms.\n");
+	if (xcb_ewmh_init_atoms_replies(ewmh, xcb_ewmh_init_atoms(dpy, ewmh), NULL) == 0) {
+		warnx("can't initialize EWMH atoms.");
+		return false;
+	}
+	return true;
 }
 
 void output_current_desktop(void)
@@ -169,7 +187,7 @@ void output_total_desktops(void)
 
 bool desktop_changed(xcb_generic_event_t *evt)
 {
-	if ((evt->response_type & ~0x80) == XCB_PROPERTY_NOTIFY){
+	if (XCB_EVENT_RESPONSE_TYPE(evt) == XCB_PROPERTY_NOTIFY){
 		xcb_property_notify_event_t *pne = (xcb_property_notify_event_t*) evt;
 		if(pne->atom == cur_desktop_atom)
 			return true;
