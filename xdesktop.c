@@ -16,7 +16,6 @@
 uint32_t cur_desktop;
 uint32_t tot_desktops;
 xcb_atom_t cur_desktop_atom;
-xcb_timestamp_t timestamp;
 
 int main(int argc, char *argv[])
 {
@@ -66,7 +65,7 @@ int main(int argc, char *argv[])
 			output_current_desktop();
 
 			if (snoop) {
-				const uint32_t values[] = { XCB_EVENT_MASK_PROPERTY_CHANGE};
+				const uint32_t values[] = {XCB_EVENT_MASK_PROPERTY_CHANGE};
 				xcb_change_window_attributes (dpy, screen->root, XCB_CW_EVENT_MASK, values);
 
 				xcb_intern_atom_cookie_t ac = xcb_intern_atom(dpy, 0, strlen("_NET_CURRENT_DESKTOP"), "_NET_CURRENT_DESKTOP");
@@ -127,7 +126,7 @@ int main(int argc, char *argv[])
 				err("You don't have a desktop %i.\n", query + 1);
 		}
 
-  		xcb_ewmh_request_change_current_desktop(ewmh, default_screen, query, timestamp);
+		xcb_ewmh_request_change_current_desktop(ewmh, default_screen, query, XCB_CURRENT_TIME);
 
 		xcb_flush(dpy);
 	}
