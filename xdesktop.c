@@ -12,6 +12,7 @@
 #include <xcb/xcb_ewmh.h>
 #include "xdesktop.h"
 
+uint32_t old_desktop = -1;
 uint32_t cur_desktop;
 uint32_t tot_desktops;
 xcb_atom_t cur_desktop_atom;
@@ -173,7 +174,11 @@ void output_current_desktop(void)
 	xcb_ewmh_get_current_desktop_reply(ewmh, xcb_ewmh_get_current_desktop(ewmh, default_screen), &cur_desktop, NULL);
 	cur_desktop = cur_desktop + 1;
 
-	printf("%i\n", cur_desktop);
+	if(old_desktop != cur_desktop) {
+		printf("%i\n", cur_desktop);
+		old_desktop = cur_desktop;
+	}
+
 	fflush(stdout);
 }
 
